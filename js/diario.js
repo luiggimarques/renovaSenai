@@ -226,14 +226,12 @@ class DiarioController {
       if (!this.frequencias[aluno.id]) {
         if (ehStatusX) {
           this.frequencias[aluno.id] = Array(this.quantidadeAulas).fill('X');
-        } else if (justificativa) {
-          this.frequencias[aluno.id] = Array(this.quantidadeAulas).fill('D');
         } else {
           this.frequencias[aluno.id] = Array(this.quantidadeAulas).fill('C');
         }
       }
 
-      // Células de frequência (botões C/F/A/D)
+      // Células de frequência (botões C/F/A)
       let celulasHtml = '';
       if (ehStatusX) {
         celulasHtml = `<td colspan="${this.quantidadeAulas}" style="text-align:center; padding:20px;">
@@ -249,7 +247,6 @@ class DiarioController {
                 <button class="btn-freq-opt ${status==='C'?'active-C':''}" onclick="window.diarioController.setFrequencia(${aluno.id},${i},'C')" title="Presente">C</button>
                 <button class="btn-freq-opt ${status==='F'?'active-F':''}" ${disabledF} onclick="window.diarioController.setFrequencia(${aluno.id},${i},'F')" title="Falta">F</button>
                 <button class="btn-freq-opt ${status==='A'?'active-A':''}" onclick="window.diarioController.setFrequencia(${aluno.id},${i},'A')" title="Atraso">A</button>
-                <button class="btn-freq-opt ${status==='D'?'active-D':''}" onclick="window.diarioController.setFrequencia(${aluno.id},${i},'D')" title="Dispensa">D</button>
               </div>
             </td>`;
         }
@@ -323,8 +320,7 @@ class DiarioController {
     const alunos = window.db.getAlunosPorTurma(this.turmaId, this.subturma);
     alunos.forEach(aluno => {
       if (aluno.statusMatricula === 'ATIVO') {
-        const justificativa = window.db.getJustificativaParaData(aluno.id, this.dataAula);
-        this.frequencias[aluno.id] = Array(this.quantidadeAulas).fill(justificativa ? 'D' : 'C');
+        this.frequencias[aluno.id] = Array(this.quantidadeAulas).fill('C');
       }
     });
     this.carregarChamada();

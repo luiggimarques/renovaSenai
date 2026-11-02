@@ -869,3 +869,91 @@
   font-size: 11.5px;
   padding: 7px 10px;
 }
+
+
+/* =============================================================================
+   COORDENADOR - MOBILE RESPONSIVENESS
+   ============================================================================= */
+@media (max-width: 768px) {
+  .coord-readonly-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+  }
+
+  .coord-readonly-back-btn {
+    align-self: flex-end;
+  }
+
+  .coord-docente-fechamento-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+  }
+
+  .coord-uc-body {
+    padding: 14px;
+  }
+
+  .uc-header-left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .uc-header-right {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .sintese-kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+
+  .turma-card-actions {
+    flex-direction: column;
+  }
+
+  .turma-card-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .coord-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .coord-table {
+    min-width: 600px;
+  }
+}
+
+@media (max-width: 480px) {
+  .coord-portal-header {
+    margin-bottom: 16px;
+  }
+
+  .coord-course-pill {
+    padding: 10px 12px;
+  }
+
+  .coord-course-pill .pill-name {
+    font-size: 12px;
+  }
+
+  .coord-uc-header {
+    padding: 10px 12px;
+  }
+
+  .coord-uc-body {
+    padding: 10px 12px;
+  }
+
+  .coord-fechamento-card {
+    padding: 14px;
+  }
+}

@@ -682,3 +682,99 @@
 .btn-modal-subtle:hover {
   background: rgba(255, 255, 255, 0.15);
 }
+
+
+/* =============================================================================
+   LOGIN PAGE - MOBILE RESPONSIVENESS
+   ============================================================================= */
+@media (max-width: 768px) {
+  .login-wrapper {
+    max-width: 100%;
+    padding: 20px 16px;
+  }
+
+  .portal-title {
+    font-size: 18px;
+    letter-spacing: 2px;
+  }
+
+  .portal-title .title-bold {
+    letter-spacing: 2px;
+  }
+
+  .senai-badge-img {
+    width: 130px;
+  }
+
+  .portal-header {
+    margin-bottom: 22px;
+  }
+
+  .login-role-toggle {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .role-toggle-btn {
+    font-size: 11px;
+    padding: 10px 12px;
+  }
+
+  /* Elementos HUD decorativos - esconder em mobile */
+  .login-hud-decorations {
+    display: none;
+  }
+
+  .login-modal-card {
+    padding: 24px 18px 20px 18px;
+  }
+
+  .login-modal-title {
+    font-size: 17px;
+  }
+
+  .demo-popover-menu {
+    min-width: 220px;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+  }
+
+  .demo-popover-menu.open {
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@media (max-width: 480px) {
+  .login-wrapper {
+    padding: 16px 12px;
+  }
+
+  .portal-title {
+    font-size: 15px;
+    letter-spacing: 1.5px;
+  }
+
+  .senai-badge-img {
+    width: 110px;
+  }
+
+  .portal-input {
+    height: 46px;
+    font-size: 14px;
+  }
+
+  .btn-entrar {
+    height: 46px;
+    font-size: 14px;
+  }
+
+  .forgot-btn {
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+
+  .btn-quick-demo {
+    font-size: 11px;
+    padding: 7px 14px;
+  }
+}
