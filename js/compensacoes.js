@@ -31,8 +31,8 @@ class CompensacoesController {
       const isAtrasos = c.tipoOrigem === 'ATRASOS' || c.motivoOrigem.includes('atrasos');
       const isFaltas = c.tipoOrigem === 'FALTAS' || c.motivoOrigem.includes('Frequência abaixo');
       const tipoBadge = isFaltas 
-        ? '<span class="portal-tag-pill" style="background:#fee2e2; color:#991b1b; font-size:10px;">🔴 FALTAS</span>'
-        : '<span class="portal-tag-pill" style="background:#fef3c7; color:#b45309; font-size:10px;">⚠️ ATRASOS</span>';
+        ? '<span class="portal-tag-pill" style="background:#fee2e2; color:#991b1b; font-size:10px;"> FALTAS</span>'
+        : '<span class="portal-tag-pill" style="background:#fef3c7; color:#b45309; font-size:10px;"> ATRASOS</span>';
       
       return `
         <tr class="${isFaltas ? 'row-freq-critical' : ''}">
@@ -44,8 +44,8 @@ class CompensacoesController {
           </td>
           <td>
             ${c.status === 'PENDENTE' 
-              ? '<span class="delays-warning-chip" style="font-size:12px;">⏳ PENDENTE</span>' 
-              : '<span style="color:#16a34a; font-weight:700; font-size:12px;">✅ CUMPRIDA</span>'}
+              ? '<span class="delays-warning-chip" style="font-size:12px;"> PENDENTE</span>' 
+              : '<span style="color:#16a34a; font-weight:700; font-size:12px;"> CUMPRIDA</span>'}
           </td>
           <td>
             <div style="font-size:12.5px;">${c.atividadeDescricao || 'Atividade a definir'}</div>
@@ -78,11 +78,11 @@ class CompensacoesController {
           onclick="window.compensacoesController.setFiltro('TODOS')">Todas</button>
         <button type="button" class="btn btn-sm ${this.filtroTipo === 'ATRASOS' ? 'btn-primary' : 'btn-outline'}" 
           onclick="window.compensacoesController.setFiltro('ATRASOS')" style="border-color:#fcd34d; color:#b45309;">
-          <span class="portal-tag-pill" style="background:#fef3c7; color:#b45309; padding:0 8px;">⚠️ Atrasos</span>
+          <span class="portal-tag-pill" style="background:#fef3c7; color:#b45309; padding:0 8px;"> Atrasos</span>
         </button>
         <button type="button" class="btn btn-sm ${this.filtroTipo === 'FALTAS' ? 'btn-primary' : 'btn-outline'}" 
           onclick="window.compensacoesController.setFiltro('FALTAS')" style="border-color:#fca5a5; color:#991b1b;">
-          <span class="portal-tag-pill" style="background:#fee2e2; color:#991b1b; padding:0 8px;">🔴 Faltas</span>
+          <span class="portal-tag-pill" style="background:#fee2e2; color:#991b1b; padding:0 8px;"> Faltas</span>
         </button>
       </div>
     `;

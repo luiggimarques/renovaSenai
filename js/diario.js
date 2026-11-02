@@ -520,7 +520,7 @@ class DiarioController {
     if (alertaPrazo) {
       if (!dentroDoPrazo) {
         alertaPrazo.style.display = 'flex';
-        alertaPrazo.innerHTML = `⚠️ <strong>Atenção:</strong> Esta aula tem mais de ${window.db.data.config.prazoEdicaoDias} dias. Você pode editar, mas será registrado como alteração tardia.`;
+        alertaPrazo.innerHTML = ` <strong>Atenção:</strong> Esta aula tem mais de ${window.db.data.config.prazoEdicaoDias} dias. Você pode editar, mas será registrado como alteração tardia.`;
       } else {
         alertaPrazo.style.display = 'none';
       }
@@ -585,11 +585,11 @@ class DiarioController {
 
       // Badges informativos
       let badges = '';
-      if (justificativa) badges += `<span class="justified-pill-badge">🏥 ${justificativa.tipo}</span>`;
-      if (atrasosAcumulados >= 5) badges += `<span class="delays-warning-chip">⚠️ ${atrasosAcumulados} atrasos</span>`;
+      if (justificativa) badges += `<span class="justified-pill-badge">${justificativa.tipo}</span>`;
+      if (atrasosAcumulados >= 5) badges += `<span class="delays-warning-chip">${atrasosAcumulados} atrasos</span>`;
       else if (atrasosAcumulados > 0) badges += `<span style="font-size:11px;color:#b45309;font-weight:600;">${atrasosAcumulados} atraso(s)</span>`;
-      if (freqCritica) badges += `<span class="freq-critical-badge">🔴 ${freqPorcentagem}% CRÍTICO</span>`;
-      else if (freqPorcentagem < 85) badges += `<span style="font-size:11px;color:#d97706;font-weight:600;">⚠ ${freqPorcentagem}%</span>`;
+      if (freqCritica) badges += `<span class="freq-critical-badge">${freqPorcentagem}% CRÍTICO</span>`;
+      else if (freqPorcentagem < 85) badges += `<span style="font-size:11px;color:#d97706;font-weight:600;">${freqPorcentagem}%</span>`;
 
       const rowClass = ehStatusX ? 'row-status-x' : (freqCritica ? 'row-freq-critical' : '');
 
@@ -696,7 +696,7 @@ class DiarioController {
     }).filter(Boolean);
 
     if (criticos.length) {
-      const msg = `⚠️ FREQUÊNCIA CRÍTICA (<${window.db.data.config.frequenciaMinimaPorcentagem}%):\n\n${criticos.map(c=>`• ${c.nome} (${c.ra}) - ${c.freq}% - ${c.faltas} faltas`).join('\n')}\n\nIr para aba Compensar?`;
+      const msg = ` FREQUÊNCIA CRÍTICA (<${window.db.data.config.frequenciaMinimaPorcentagem}%):\n\n${criticos.map(c=>`• ${c.nome} (${c.ra}) - ${c.freq}% - ${c.faltas} faltas`).join('\n')}\n\nIr para aba Compensar?`;
       const elTit = document.getElementById('modalAlertaTitulo');
       const elMsg = document.getElementById('modalAlertaMensagem');
       const elFooter = document.querySelector('#modalAlertaGlobal .modal-footer');

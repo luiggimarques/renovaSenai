@@ -134,8 +134,8 @@ class CoordenadorController {
       const sol = self._getSolicitacoes().find(function(s) { return s.turmaId === t.id; });
       const statusDiario = sol
         ? (sol.status === 'APROVADO'
-          ? '<span class="coord-badge badge-aprovado">&#10003; Fechado</span>'
-          : '<span class="coord-badge badge-aguardando">&#9203; Aguardando</span>')
+          ? '<span class="coord-badge badge-aprovado">Fechado</span>'
+          : '<span class="coord-badge badge-aguardando"> Aguardando</span>')
         : '<span class="coord-badge badge-aberto">Aberto</span>';
       const statusTurma = t.status === 'EM_ANDAMENTO'
         ? '<span class="coord-badge badge-ativo">Em Andamento</span>'
@@ -191,7 +191,7 @@ class CoordenadorController {
     const self = this;
 
     if (solicitacoes.length === 0) {
-      el.innerHTML = '<div class="coord-empty-state" style="padding:32px 0;"><p>Nenhum diário aguardando aprovação. &#10003;</p></div>';
+      el.innerHTML = '<div class="coord-empty-state" style="padding:32px 0;"><p>Nenhum diário aguardando aprovação. </p></div>';
       return;
     }
 
@@ -224,7 +224,7 @@ class CoordenadorController {
         + '<div class="fechamento-metrica"><span class="metrica-val">' + freqMedia + '%</span><span class="metrica-label">Freq. Média</span></div>'
         + '<div class="fechamento-metrica' + (emRisco > 0 ? ' metrica-alerta' : '') + '"><span class="metrica-val">' + emRisco + '</span><span class="metrica-label">Em Risco</span></div>'
         + '</div>'
-        + (sol.observacao ? '<div class="fechamento-obs">&#128221; <em>"' + sol.observacao + '"</em></div>' : '')
+        + (sol.observacao ? '<div class="fechamento-obs"> <em>"' + sol.observacao + '"</em></div>' : '')
         + '<div class="fechamento-actions">'
         + '<button type="button" class="btn btn-outline btn-sm" onclick="window.coordenadorController.recusarFechamento(' + sol.id + ')">Devolver ao Docente</button>'
         + '<button type="button" class="btn btn-primary" onclick="window.coordenadorController.aprovarFechamento(' + sol.id + ')">'
@@ -332,7 +332,7 @@ class CoordenadorController {
               const outra = (window.db.data.turmas || []).find(function(t) { return t.id === a.turmaId; });
               return outra && outra.periodo === turma.periodo && outra.status === 'EM_ANDAMENTO';
             });
-            return '<option value="' + u.id + '">' + u.nome + (conflito ? ' ⚠️ Conflito de Turno' : '') + '</option>';
+            return '<option value="' + u.id + '">' + u.nome + (conflito ? '  Conflito de Turno' : '') + '</option>';
           }).join('');
 
       const checkConflitoLive = function() {
@@ -620,8 +620,8 @@ class CoordenadorController {
             const sol = self._getSolicitacoes().find(s => s.turmaId === turma.id);
             const statusDiarioBadge = sol
               ? (sol.status === 'APROVADO'
-                ? '<span class="coord-badge badge-aprovado">&#10003; Diário Fechado</span>'
-                : '<span class="coord-badge badge-aguardando">&#9203; Aguardando Homologação</span>')
+                ? '<span class="coord-badge badge-aprovado">Diário Fechado</span>'
+                : '<span class="coord-badge badge-aguardando"> Aguardando Homologação</span>')
               : '<span class="coord-badge badge-aberto">Diário Aberto</span>';
 
             const mediaColor = mediaNum >= 70 ? 'var(--color-success, #16a34a)' : (mediaNum >= 50 ? 'var(--color-warning, #d97706)' : 'var(--color-danger, #dc2626)');
@@ -676,10 +676,10 @@ class CoordenadorController {
 
                 <div class="turma-card-actions">
                   <button type="button" class="btn btn-sm btn-outline" onclick="window.app.abrirDiarioComTurma(${turma.id})" title="Inspecionar Chamada em Modo Observador">
-                    👁️ Ver Diário
+                     Ver Diário
                   </button>
                   <button type="button" class="btn btn-sm btn-primary" onclick="window.app.abrirSinteseComTurma(${turma.id}, ${uc.id})" title="Inspecionar Síntese em Modo Observador">
-                    👁️ Ver Síntese
+                     Ver Síntese
                   </button>
                 </div>
               </div>
@@ -696,8 +696,8 @@ class CoordenadorController {
                 <h4 class="uc-title">${uc.nome}</h4>
               </div>
               <div class="uc-header-right">
-                <span class="uc-ch-badge">&#9200; ${uc.cargaHoraria}h</span>
-                <span class="uc-docente-badge">&#128104;&#8205;&#127979; Titular: ${docenteTitular ? docenteTitular.nome.split(' ').slice(0, 2).join(' ') : 'SENAI'}</span>
+                <span class="uc-ch-badge"> ${uc.cargaHoraria}h</span>
+                <span class="uc-docente-badge"> Titular: ${docenteTitular ? docenteTitular.nome.split(' ').slice(0, 2).join(' ') : 'SENAI'}</span>
               </div>
             </div>
 

@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * RENOVA SENAI - MÓDULO DE SUBTURMAS (subturmas.js)
- * Divisão de Subturmas A e B, Seleção Manual, Algoritmos e Transferência
+ * Gerenciamento Manual de Subturmas A e B
  * =============================================================================
  */
 
@@ -27,11 +27,11 @@ class SubturmasController {
 
   onTurmaChange(novaTurmaId) {
     this.turmaId = Number(novaTurmaId);
-    this.cancelarSelecao(); // Reset modo seleção ao trocar turma
+    this.cancelarSelecao();
     this.renderizarSubturmas();
   }
 
-  // --- MODO SELEÇÃO ---
+  // --- MODO SELEÇÃO MANUAL ---
   iniciarSelecao() {
     if (window.auth && window.auth.isCoordenacao()) {
       window.app.mostrarToast('Ação bloqueada: a Coordenação atua exclusivamente em Modo Observador.', 'warning');
@@ -60,20 +60,11 @@ class SubturmasController {
       window.app.mostrarToast('Ação bloqueada: a Coordenação atua exclusivamente em Modo Observador.', 'warning');
       return;
     }
-    if (this.alunosSelecionados.size === 0) {
-      window.app.mostrarToast('Selecione pelo menos um aluno para a Subturma A.', 'warning');
-      return;
-    }
 
     const todosAlunos = window.db.getAlunosPorTurma(this.turmaId, 'TODOS');
     const ativos = todosAlunos.filter(a => a.statusMatricula === 'ATIVO');
     
-    if (this.alunosSelecionados.size === ativos.length) {
-      window.app.mostrarToast('Todos os alunos estão na Subturma A. A Subturma B ficaria vazia.', 'warning');
-      return;
-    }
-
-    // Aplicar: selecionados -> A, não selecionados -> B
+    // Aplicar: marcados -> A, não marcados -> B
     ativos.forEach(aluno => {
       const novaSubturma = this.alunosSelecionados.has(aluno.id) ? 'A' : 'B';
       if (aluno.subturma !== novaSubturma) {
@@ -82,7 +73,21 @@ class SubturmasController {
     });
 
     this.cancelarSelecao();
-    window.app.mostrarToast('Subturmas configuradas com sucesso! Selecionados → A | Restantes → B', 'success');
+    window.app.mostrarToast('Subturmas configuradas manualmente com sucesso!', 'success');
+  }
+
+  removerDivisao() {
+    if (window.auth && window.auth.isCoordenacao()) {
+      window.app.mostrarToast('Ação bloqueada: a Coordenação atua exclusivamente em Modo Observador.', 'warning');
+      return;
+    }
+    const todosAlunos = window.db.getAlunosPorTurma(this.turmaId, 'TODOS');
+    todosAlunos.forEach(aluno => {
+      window.db.transferirAlunoSubturma(aluno.id, null);
+    });
+    this.cancelarSelecao();
+    this.renderizarSubturmas();
+    window.app.mostrarToast('Divisão de subturmas desfeita. Todos os alunos estão na Turma Geral.', 'info');
   }
 
   atualizarUISelecao() {
@@ -97,21 +102,14 @@ class SubturmasController {
         btnConfigurar.classList.remove('btn-primary');
         btnConfigurar.classList.add('btn-secondary');
       }
-      // Esconder botões de divisão automática durante seleção
-      document.querySelectorAll('#tabSection_subturmas .btn-outline.btn-sm').forEach(btn => {
-        if (!btn.onclick.toString().includes('transferir')) btn.style.display = 'none';
-      });
     } else {
       if (selectionBar) selectionBar.style.display = 'none';
       if (btnConfigurar) {
-        btnConfigurar.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect></svg> Configurar Seleção (A)`;
+        btnConfigurar.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect></svg> Selecionar Manualmente (A/B)`;
         btnConfigurar.onclick = () => this.iniciarSelecao();
         btnConfigurar.classList.remove('btn-secondary');
         btnConfigurar.classList.add('btn-primary');
       }
-      document.querySelectorAll('#tabSection_subturmas .btn-outline.btn-sm').forEach(btn => {
-        btn.style.display = '';
-      });
     }
   }
 
@@ -133,9 +131,6 @@ class SubturmasController {
     if (countB) countB.innerText = `${alunosB.length} alunos`;
 
     if (this.modoSelecao) {
-      // MODO SELEÇÃO: Lista única com checkboxes para Subturma A
-      const todosIds = new Set(ativos.map(a => a.id));
-      
       const renderSelecaoItem = (aluno) => {
         const checked = this.alunosSelecionados.has(aluno.id) ? 'checked' : '';
         return `
@@ -166,12 +161,28 @@ class SubturmasController {
             <rect x="3" y="14" width="7" height="7"></rect>
             <rect x="14" y="14" width="7" height="7"></rect>
           </svg>
-          <div style="font-size:14px; font-weight:600; margin-bottom:4px;">Modo Seleção Ativo</div>
-          <div style="font-size:12px;">Marque os alunos para a <strong>Subturma A</strong> na coluna ao lado.<br>Os não marcados irão automaticamente para a <strong>Subturma B</strong> ao clicar em "Aplicar".</div>
+          <div style="font-size:14px; font-weight:600; margin-bottom:4px;">Modo de Seleção Manual Ativo</div>
+          <div style="font-size:12px;">Marque os alunos para a <strong>Subturma A</strong> na coluna ao lado.<br>Os não marcados irão para a <strong>Subturma B</strong> ao clicar em "Aplicar".</div>
         </div>
       `;
     } else {
-      // MODO VISUALIZAÇÃO/EDIÇÃO NORMAL: Duas colunas com botões de mover
+      if (alunosA.length === 0 && alunosB.length === 0) {
+        colA.innerHTML = `
+          <div style="text-align:center; padding:32px 16px; color:var(--text-muted);">
+            <p style="font-size:13.5px; margin-bottom:12px;">Nenhuma subturma configurada ainda para esta turma.</p>
+            <button type="button" class="btn btn-sm btn-primary" onclick="window.subturmasController.iniciarSelecao()">
+              Configurar Subturmas Manualmente
+            </button>
+          </div>
+        `;
+        colB.innerHTML = `
+          <div style="text-align:center; padding:32px 16px; color:var(--text-muted);">
+            <p style="font-size:13px;">Todos os ${ativos.length} alunos estão na Turma Geral.</p>
+          </div>
+        `;
+        return;
+      }
+
       const renderItem = (aluno, destino) => `
         <div class="subturma-student-item">
           <div style="display:flex; align-items:center; gap:10px;">
@@ -198,25 +209,7 @@ class SubturmasController {
     } else {
       this.alunosSelecionados.delete(alunoId);
     }
-    // Re-renderizar apenas para atualizar estilos visuais dos checkboxes
     this.renderizarSubturmas();
-  }
-
-  // --- AÇÕES ---
-  dividirAutomaticamente(metodo) {
-    if (window.auth && window.auth.isCoordenacao()) {
-      window.app.mostrarToast('Ação bloqueada: a Coordenação atua exclusivamente em Modo Observador.', 'warning');
-      return;
-    }
-    window.db.dividirSubturmas(this.turmaId, metodo);
-    this.cancelarSelecao(); // Sai do modo seleção se estiver ativo
-    this.renderizarSubturmas();
-    const metodosNomes = {
-      pares_impares: 'Pares e Ímpares',
-      sequencial: 'Sequencial (Metade A / Metade B)',
-      aleatorio: 'Distribuição Aleatória Equilibrada'
-    };
-    window.app.mostrarToast(`Subturmas redistribuídas com sucesso via: ${metodosNomes[metodo]}!`, 'success');
   }
 
   transferir(alunoId, novaSubturma) {
@@ -226,7 +219,7 @@ class SubturmasController {
     }
     window.db.transferirAlunoSubturma(alunoId, novaSubturma);
     this.renderizarSubturmas();
-    window.app.mostrarToast(`Aluno transferido para a Subturma ${novaSubturma}! Registros de chamadas históricas preservados.`, 'success');
+    window.app.mostrarToast(`Aluno transferido para a Subturma ${novaSubturma}!`, 'success');
   }
 }
 

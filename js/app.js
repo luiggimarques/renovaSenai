@@ -68,7 +68,7 @@ class AppController {
       const bannerGreeting = document.getElementById('bannerWelcomeName');
       if (bannerGreeting) {
         const primeiroNome = user.nome.split(' ')[0].toUpperCase();
-        bannerGreeting.innerText = `Bem-vindo(a) de volta, ${primeiroNome}! ✨`;
+        bannerGreeting.innerText = `Bem-vindo(a) de volta, ${primeiroNome}! `;
       }
     }
 
@@ -541,8 +541,8 @@ class AppController {
     if (bannerGreeting) {
       const primeiroNome = user.nome.split(' ')[0].toUpperCase();
       bannerGreeting.innerText = isCoordenador
-        ? 'Portal da Coordenação, ' + primeiroNome + '! 📋'
-        : 'Bem-vindo(a) de volta, ' + primeiroNome + '! ✨';
+        ? 'Portal da Coordenação, ' + primeiroNome + '! '
+        : 'Bem-vindo(a) de volta, ' + primeiroNome + '! ';
     }
 
     // Botão "Solicitar Fechamento do Diário" (só para docentes na aba coordenador)
@@ -585,7 +585,7 @@ class AppController {
           </svg>
         </div>
         <div class="coord-readonly-content">
-          <div class="coord-readonly-title">👁️ MODO OBSERVADOR DA COORDENAÇÃO &bull; SOMENTE LEITURA</div>
+          <div class="coord-readonly-title"> MODO OBSERVADOR DA COORDENAÇÃO &bull; SOMENTE LEITURA</div>
           <div class="coord-readonly-desc">
             Você está visualizando os registros pedagógicos desta turma com privilégios exclusivos de observação e auditoria. Todas as alterações, lançamentos de faltas e notas são bloqueadas para manter a autonomia docente.
           </div>
@@ -964,7 +964,7 @@ class AppController {
 
   // Utilitário: Resetar banco de dados para seed inicial (útil após mudanças de escala de notas)
   resetarBancoDados() {
-    if (confirm('⚠️ ATENÇÃO: Isso apagará TODOS os dados salvos (notas, faltas, ocorrências, etc.) e restaurará o seed inicial com escala 0-100.\n\nTem certeza?')) {
+    if (confirm(' ATENÇÃO: Isso apagará TODOS os dados salvos (notas, faltas, ocorrências, etc.) e restaurará o seed inicial com escala 0-100.\n\nTem certeza?')) {
       window.db.reset();
       this.mostrarToast('Banco de dados resetado! Recarregando...', 'success');
       setTimeout(() => window.location.reload(), 1000);

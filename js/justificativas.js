@@ -26,7 +26,7 @@ class JustificativasController {
     tbody.innerHTML = lista.map(j => `
       <tr>
         <td><strong>${j.alunoNome}</strong></td>
-        <td><span class="justified-pill-badge">🏥 ${j.tipo}</span></td>
+        <td><span class="justified-pill-badge"> ${j.tipo}</span></td>
         <td>${j.dataInicio} até ${j.dataFim}</td>
         <td>
           <div style="font-weight:600;">${j.motivo}</div>

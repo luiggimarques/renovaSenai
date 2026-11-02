@@ -65,7 +65,7 @@ class AssistenteIAController {
     }
 
     const turma = window.db.getTurmaById(this.turmaId);
-    const msgContexto = `🔄 **Turma alterada para ${turma?.codigo || ''} - ${turma?.nome || ''}**.\nTodos os diagnósticos e dados agora correspondem a esta turma. Como posso ajudar?`;
+    const msgContexto = ` **Turma alterada para ${turma?.codigo || ''} - ${turma?.nome || ''}**.\nTodos os diagnósticos e dados agora correspondem a esta turma. Como posso ajudar?`;
     this.adicionarMensagem('bot', msgContexto);
   }
 
@@ -144,7 +144,7 @@ class AssistenteIAController {
 
     if (valor) {
       window.app.mostrarToast('Chave Groq salva com sucesso! O assistente agora usará IA generativa em tempo real.', 'success');
-      this.adicionarMensagem('bot', '✨ **Chave Groq ativada!** Agora estou conectado aos modelos Llama 3.1 para análises aprofundadas com raciocínio pedagógico.');
+      this.adicionarMensagem('bot', ' **Chave Groq ativada!** Agora estou conectado aos modelos Llama 3.1 para análises aprofundadas com raciocínio pedagógico.');
     } else {
       window.app.mostrarToast('Modo Local Inteligente ativado (sem API Key).', 'info');
     }
@@ -486,30 +486,30 @@ ${JSON.stringify(dadosContexto, null, 2)}`;
         const mediaGeral = countMedias > 0 ? (somaMedias / countMedias).toFixed(1) : '75.0';
         const freqGeral = ativos > 0 ? (somaFreq / ativos).toFixed(1) : '85.0';
 
-        return `📊 **Resumo Geral da Turma**\n**${turma?.codigo || ''} - ${turma?.nome || ''}**\n**Unidade Curricular:** ${ucAtual?.nome || 'Desenvolvimento Web'}\n\n` +
+        return ` **Resumo Geral da Turma**\n**${turma?.codigo || ''} - ${turma?.nome || ''}**\n**Unidade Curricular:** ${ucAtual?.nome || 'Desenvolvimento Web'}\n\n` +
           `- **Total de Estudantes:** ${total} matriculados (${ativos} ativos, ${trancados} com status especial/trancado)\n` +
           `- **Média Geral da Turma:** **${mediaGeral}** / 100 pts (Meta Regimental SENAI: 70.0 pts)\n` +
           `- **Frequência Média:** **${freqGeral}%** (Mínimo obrigatório: 75.0%)\n` +
           `- **Aulas Ministradas até o momento:** ${sintese?.totalAulasDadas || 28} horas-aula\n` +
           `- **Alunos em Situação de Alerta/Risco:** **${countRisco} estudantes** com pendências de nota ou frequência.\n\n` +
-          `💡 *Dica:* Clique em **"Alunos em risco"** ou **"Plano de ação"** para ver a lista nominal e intervenções recomendadas.`;
+          ` *Dica:* Clique em **"Alunos em risco"** ou **"Plano de ação"** para ver a lista nominal e intervenções recomendadas.`;
       }
 
       case 'risco': {
         const emRisco = alunos.filter(a => a.aluno.statusMatricula === 'ATIVO' && (a.media < 70 || a.freqPorcentagem < 80));
 
         if (emRisco.length === 0) {
-          return `✅ **Excelente notícia!** Não há alunos em situação de risco na turma **${turma?.codigo}** no momento. Todos estão com média ≥ 70 e frequência ≥ 80%.`;
+          return ` **Excelente notícia!** Não há alunos em situação de risco na turma **${turma?.codigo}** no momento. Todos estão com média ≥ 70 e frequência ≥ 80%.`;
         }
 
-        let txt = `⚠️ **Diagnóstico de Alunos em Risco (${emRisco.length} identificados)**\n` +
+        let txt = ` **Diagnóstico de Alunos em Risco (${emRisco.length} identificados)**\n` +
           `Turma: ${turma?.codigo} • Critérios: Nota < 70 ou Frequência < 80%\n\n`;
 
         emRisco.forEach((item, idx) => {
-          const alertaNota = item.media < 70 ? `❌ Nota: **${item.media}** (Abaixo de 70)` : `✅ Nota: ${item.media}`;
+          const alertaNota = item.media < 70 ? ` Nota: **${item.media}** (Abaixo de 70)` : ` Nota: ${item.media}`;
           const alertaFreq = item.freqPorcentagem < 75 
-            ? `🚨 Freq: **${item.freqPorcentagem}%** (Retenção Iminente)` 
-            : (item.freqPorcentagem < 80 ? `⚠️ Freq: **${item.freqPorcentagem}%** (Zona de Alerta)` : `✅ Freq: ${item.freqPorcentagem}%`);
+            ? ` Freq: **${item.freqPorcentagem}%** (Retenção Iminente)` 
+            : (item.freqPorcentagem < 80 ? ` Freq: **${item.freqPorcentagem}%** (Zona de Alerta)` : ` Freq: ${item.freqPorcentagem}%`);
           
           txt += `${idx + 1}. **${item.aluno.nome}** (Matrícula: ${item.aluno.matricula})\n` +
             `   • ${alertaNota} | ${alertaFreq}\n` +
@@ -517,12 +517,12 @@ ${JSON.stringify(dadosContexto, null, 2)}`;
             `   • Situação: *${item.situacaoFinal}*\n\n`;
         });
 
-        txt += `📌 **Recomendação do Assistente:** Agendar recuperação paralela nos critérios de menor pontuação e acionar a coordenação pedagógica para acolhimento dos estudantes com baixa frequência.`;
+        txt += ` **Recomendação do Assistente:** Agendar recuperação paralela nos critérios de menor pontuação e acionar a coordenação pedagógica para acolhimento dos estudantes com baixa frequência.`;
         return txt;
       }
 
       case 'plano': {
-        return `📋 **Plano de Ação Pedagógica Recomendado**\n**Turma:** ${turma?.codigo} - ${turma?.nome}\n\n` +
+        return ` **Plano de Ação Pedagógica Recomendado**\n**Turma:** ${turma?.codigo} - ${turma?.nome}\n\n` +
           `Com base nos dados atuais da turma, estruturei um plano de intervenção em 3 etapas:\n\n` +
           `**1. Eixo Recuperação de Aprendizagem (Notas < 70):**\n` +
           `- **Oficina Prática Guiada:** Aplicação de exercício de fixação focado nos critérios não atingidos na última avaliação prática.\n` +
@@ -541,7 +541,7 @@ ${JSON.stringify(dadosContexto, null, 2)}`;
 
         const aulaRecente = ultimasAulas[0];
         if (!aulaRecente || !aulaRecente.frequencias) {
-          return `📅 Não foram localizados registros de chamada recentes para a turma **${turma?.codigo}**. Realize a chamada no módulo Diário de Classe.`;
+          return ` Não foram localizados registros de chamada recentes para a turma **${turma?.codigo}**. Realize a chamada no módulo Diário de Classe.`;
         }
 
         const ausentes = [];
@@ -561,13 +561,13 @@ ${JSON.stringify(dadosContexto, null, 2)}`;
           }
         });
 
-        let txt = `📅 **Relatório de Frequência da Última Aula (${aulaRecente.data})**\n` +
+        let txt = ` **Relatório de Frequência da Última Aula (${aulaRecente.data})**\n` +
           `Turma: ${turma?.codigo} • Período: ${aulaRecente.periodo || 'Tarde'}\n\n`;
 
         if (ausentes.length > 0) {
-          txt += `❌ **Ausentes / Faltas (${ausentes.length}):**\n` + ausentes.map(n => `- ${n}`).join('\n') + `\n\n`;
+          txt += ` **Ausentes / Faltas (${ausentes.length}):**\n` + ausentes.map(n => `- ${n}`).join('\n') + `\n\n`;
         } else {
-          txt += `✅ **Nenhuma falta não justificada registrada nesta data!**\n\n`;
+          txt += ` **Nenhuma falta não justificada registrada nesta data!**\n\n`;
         }
 
         if (atrasados.length > 0) {
@@ -575,7 +575,7 @@ ${JSON.stringify(dadosContexto, null, 2)}`;
         }
 
         if (dispensados.length > 0) {
-          txt += `🏥 **Dispensas / Atestados Homologados (${dispensados.length}):**\n` + dispensados.map(n => `- ${n} [Atestado homologado pela coordenação]`).join('\n') + `\n\n`;
+          txt += ` **Dispensas / Atestados Homologados (${dispensados.length}):**\n` + dispensados.map(n => `- ${n} [Atestado homologado pela coordenação]`).join('\n') + `\n\n`;
         }
 
         return txt;
@@ -587,7 +587,7 @@ ${JSON.stringify(dadosContexto, null, 2)}`;
           .map(a => a.media);
 
         if (notasValidas.length === 0) {
-          return `📈 Ainda não há avaliações consolidadas lançadas no sistema para a turma **${turma?.codigo}**. Acesse a aba **Notas** para lançar instrumentos avaliativos.`;
+          return ` Ainda não há avaliações consolidadas lançadas no sistema para a turma **${turma?.codigo}**. Acesse a aba **Notas** para lançar instrumentos avaliativos.`;
         }
 
         const soma = notasValidas.reduce((acc, v) => acc + v, 0);
@@ -598,13 +598,13 @@ ${JSON.stringify(dadosContexto, null, 2)}`;
         const acimaMeta = notasValidas.filter(n => n >= 70).length;
         const abaixoMeta = notasValidas.filter(n => n < 70).length;
 
-        return `📈 **Estatísticas de Rendimento e Média da Turma**\n**${turma?.codigo} - ${turma?.nome}**\n\n` +
+        return ` **Estatísticas de Rendimento e Média da Turma**\n**${turma?.codigo} - ${turma?.nome}**\n\n` +
           `- **Média Aritmética Geral:** **${mediaGeral} pts** (Meta SENAI: 70.0)\n` +
           `- **Maior Nota Registrada:** **${maior} pts**\n` +
           `- **Menor Nota Registrada:** **${menor} pts**\n` +
           `- **Distribuição:**\n` +
-          `  • ✅ Alunos com média ≥ 70: **${acimaMeta}** (${Math.round((acimaMeta / notasValidas.length) * 100)}%)\n` +
-          `  • ⚠️ Alunos com média < 70: **${abaixoMeta}** (${Math.round((abaixoMeta / notasValidas.length) * 100)}%)\n\n` +
+          `  •  Alunos com média ≥ 70: **${acimaMeta}** (${Math.round((acimaMeta / notasValidas.length) * 100)}%)\n` +
+          `  •  Alunos com média < 70: **${abaixoMeta}** (${Math.round((abaixoMeta / notasValidas.length) * 100)}%)\n\n` +
           `O rendimento global da turma é considerado **${mediaGeral >= 75 ? 'SATISFATÓRIO' : 'EM ATENÇÃO'}**.`;
       }
 
@@ -612,10 +612,10 @@ ${JSON.stringify(dadosContexto, null, 2)}`;
         const reprovados = alunos.filter(a => a.aluno.statusMatricula === 'ATIVO' && a.media < 70);
 
         if (reprovados.length === 0) {
-          return `🎉 **Parabéns!** Nenhum aluno ativo da turma **${turma?.codigo}** está com média abaixo de 70. Todos atingiram a meta mínima de aprovação!`;
+          return ` **Parabéns!** Nenhum aluno ativo da turma **${turma?.codigo}** está com média abaixo de 70. Todos atingiram a meta mínima de aprovação!`;
         }
 
-        let txt = `📉 **Alunos com Notas Abaixo de 70 (${reprovados.length} encontrados):**\n` +
+        let txt = ` **Alunos com Notas Abaixo de 70 (${reprovados.length} encontrados):**\n` +
           `Turma: ${turma?.codigo} • Meta de aprovação SENAI: 70.0 pts\n\n`;
 
         reprovados.forEach((item, i) => {
@@ -625,7 +625,7 @@ ${JSON.stringify(dadosContexto, null, 2)}`;
             `   • Situação: *${item.situacaoFinal}*\n\n`;
         });
 
-        txt += `💡 *Ação Sugerida:* Realizar plantão de dúvidas focado e disponibilizar lista de exercícios complementares para recuperação de nota.`;
+        txt += ` *Ação Sugerida:* Realizar plantão de dúvidas focado e disponibilizar lista de exercícios complementares para recuperação de nota.`;
         return txt;
       }
 
@@ -633,16 +633,16 @@ ${JSON.stringify(dadosContexto, null, 2)}`;
         const baixaFreq = alunos.filter(a => a.aluno.statusMatricula === 'ATIVO' && a.freqPorcentagem < 80);
 
         if (baixaFreq.length === 0) {
-          return `🌟 Excelente! Todos os alunos da turma **${turma?.codigo}** estão com presença igual ou superior a **80%**.`;
+          return ` Excelente! Todos os alunos da turma **${turma?.codigo}** estão com presença igual ou superior a **80%**.`;
         }
 
-        let txt = `🚨 **Alunos com Frequência Crítica (< 80%):**\n` +
+        let txt = ` **Alunos com Frequência Crítica (< 80%):**\n` +
           `Turma: ${turma?.codigo} • Limite regimental para reprovação direta por faltas: 75.0%\n\n`;
 
         baixaFreq.forEach((item, i) => {
           const statusFalta = item.freqPorcentagem < 75 
-            ? '🔴 **RETENÇÃO POR FALTA ATINGIDA**' 
-            : '🟡 **EM ALERTA VERMELHO (Próximo dos 75%)**';
+            ? ' **RETENÇÃO POR FALTA ATINGIDA**' 
+            : ' **EM ALERTA VERMELHO (Próximo dos 75%)**';
 
           txt += `${i + 1}. **${item.aluno.nome}**\n` +
             `   • Percentual de Presença: **${item.freqPorcentagem}%**\n` +
@@ -650,7 +650,7 @@ ${JSON.stringify(dadosContexto, null, 2)}`;
             `   • Faltas Registradas: ${item.faltas} | Atrasos: ${item.atrasos}\n\n`;
         });
 
-        txt += `⚠️ *Aviso Regimental:* Conforme norma do SENAI-SP, alunos com frequência inferior a 75% não obtêm aprovação no componente curricular, salvo compensação formal aprovada pela coordenação.`;
+        txt += ` *Aviso Regimental:* Conforme norma do SENAI-SP, alunos com frequência inferior a 75% não obtêm aprovação no componente curricular, salvo compensação formal aprovada pela coordenação.`;
         return txt;
       }
 
@@ -658,7 +658,7 @@ ${JSON.stringify(dadosContexto, null, 2)}`;
         const justificativas = window.db.getJustificativas();
         const trancados = alunos.filter(a => a.aluno.statusMatricula === 'TRANCADO' || a.aluno.statusMatricula === 'CANCELADO');
 
-        return `📝 **Observações Pedagógicas Consolidadas**\n**Turma:** ${turma?.codigo} - ${turma?.nome}\n\n` +
+        return ` **Observações Pedagógicas Consolidadas**\n**Turma:** ${turma?.codigo} - ${turma?.nome}\n\n` +
           `- **Atestados Médicos e Dispensas Ativas:** ${justificativas.length} registros homologados pela coordenação na secretaria escolar.\n` +
           `- **Status Especial de Matrícula (Status X):** ${trancados.length} estudantes com matrícula trancada ou cancelada (frequência bloqueada conforme regimento).\n` +
           `- **Prazo Regimental de Alteração:** O prazo para alteração histórica de presenças e notas está configurado em **${window.db.data.config.prazoEdicaoDias || 7} dias**.\n` +
@@ -668,10 +668,10 @@ ${JSON.stringify(dadosContexto, null, 2)}`;
       case 'ocorrencias': {
         const ocorrencias = window.db.getOcorrencias('TODAS');
         if (ocorrencias.length === 0) {
-          return `ℹ️ Não há ocorrências disciplinares ou pedagógicas registradas no sistema para a turma **${turma?.codigo}**.`;
+          return `ℹ Não há ocorrências disciplinares ou pedagógicas registradas no sistema para a turma **${turma?.codigo}**.`;
         }
 
-        let txt = `📋 **Relatório de Ocorrências Registradas (${ocorrencias.length})**\n\n`;
+        let txt = ` **Relatório de Ocorrências Registradas (${ocorrencias.length})**\n\n`;
         ocorrencias.slice(0, 6).forEach((oc, i) => {
           const aluno = window.db.getAlunoById(oc.alunoId);
           txt += `${i + 1}. **[${oc.tipo}]** Aluno: **${aluno ? aluno.nome : 'Geral'}**\n` +
@@ -683,10 +683,10 @@ ${JSON.stringify(dadosContexto, null, 2)}`;
       }
 
       case 'reservas': {
-        return `🏛️ **Status de Ambientes e Recursos da Turma**\n**Turma:** ${turma?.codigo}\n\n` +
+        return ` **Status de Ambientes e Recursos da Turma**\n**Turma:** ${turma?.codigo}\n\n` +
           `- **Sala de Aula Teórica:** Sala 204 - Bloco A (Equipada com Projetor Interativo)\n` +
           `- **Laboratório Principal:** Lab de Informática 03 (32 máquinas com VS Code, Node.js e Docker)\n` +
-          `- **Status da Reserva Atual:** ✅ Confirmada e Ativa para as aulas regulares de ${turma?.periodo || 'Tarde'}\n` +
+          `- **Status da Reserva Atual:**  Confirmada e Ativa para as aulas regulares de ${turma?.periodo || 'Tarde'}\n` +
           `- **Próximas Reservas de Eventos:** Auditório Principal pré-agendado para a apresentação dos TCCs ao final do semestre.`;
       }
 
@@ -696,10 +696,10 @@ ${JSON.stringify(dadosContexto, null, 2)}`;
           .sort((a, b) => b.media - a.media);
 
         if (destaques.length === 0) {
-          return `👏 Há vários alunos com bom desempenho, porém nenhum atingiu simultaneamente média ≥ 85 e presença ≥ 90% nesta etapa.`;
+          return ` Há vários alunos com bom desempenho, porém nenhum atingiu simultaneamente média ≥ 85 e presença ≥ 90% nesta etapa.`;
         }
 
-        let txt = `🏆 **Alunos Destaque da Turma (${destaques.length} estudantes):**\n` +
+        let txt = ` **Alunos Destaque da Turma (${destaques.length} estudantes):**\n` +
           `Critérios: Média ≥ 85 pts e Frequência ≥ 90%\n\n`;
 
         destaques.forEach((item, i) => {
@@ -709,7 +709,7 @@ ${JSON.stringify(dadosContexto, null, 2)}`;
             `   • Perfil: Alto engajamento técnico, assiduidade e colaboração em equipe.\n\n`;
         });
 
-        txt += `💡 *Sugestão:* Convidar esses alunos para atuar como monitores auxiliares nas atividades práticas de nivelamento da turma.`;
+        txt += ` *Sugestão:* Convidar esses alunos para atuar como monitores auxiliares nas atividades práticas de nivelamento da turma.`;
         return txt;
       }
 
@@ -718,7 +718,7 @@ ${JSON.stringify(dadosContexto, null, 2)}`;
         // Tenta achar aluno mencionado pelo nome
         const nomeEncontrado = alunos.find(a => textoUsuario.toLowerCase().includes(a.aluno.nome.toLowerCase().split(' ')[0]));
         if (nomeEncontrado) {
-          return `🔍 **Dados Localizados do Aluno:**\n` +
+          return ` **Dados Localizados do Aluno:**\n` +
             `**Nome:** ${nomeEncontrado.aluno.nome}\n` +
             `**Matrícula:** ${nomeEncontrado.aluno.matricula}\n` +
             `**Média Atual:** ${nomeEncontrado.media} pts\n` +
@@ -728,7 +728,7 @@ ${JSON.stringify(dadosContexto, null, 2)}`;
         }
 
         const temChaveGroq = this.apiKey && this.apiKey.trim().startsWith('gsk_');
-        return `🤖 Analisei os registros da turma **${turma?.codigo || 'TDS'}**.\n\n` +
+        return ` Analisei os registros da turma **${turma?.codigo || 'TDS'}**.\n\n` +
           (temChaveGroq 
             ? `Processando sua pergunta com **Groq (Llama 3.1)**...`
             : `Para perguntas abertas em linguagem natural irrestrita (como gerar roteiros de aula, provas ou análises pedagógicas personalizadas), **conecte sua chave de API gratuita da Groq** clicando no botão **"Chave Groq API"** no cabeçalho.\n\n`) +
