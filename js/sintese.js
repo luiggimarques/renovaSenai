@@ -2,7 +2,6 @@
  * =============================================================================
  * RENOVA SENAI - SÍNTESE DO PROFESSOR (sintese.js)
  * Consolidação Automática de Dados Acadêmicos (Frequência, Compensações, Médias)
- * Layout Moderno com Cards de Estatísticas e Tabela Aprimorada
  * =============================================================================
  */
 
@@ -58,9 +57,6 @@ class SinteseController {
     const dados = window.db.getSinteseConsolidada(this.turmaId, this.ucId);
     const turma = window.db.getTurmaById(this.turmaId);
     const uc = window.db.getUCById(this.ucId);
-    const alunosAtivos = dados.alunos.filter(item => 
-      item.aluno.statusMatricula === 'ATIVO'
-    );
 
     if (headerInfo && turma && uc) {
       headerInfo.innerHTML = `
@@ -78,32 +74,19 @@ class SinteseController {
     this.renderizarCardsResumo(resumoContainer, stats, dados.totalAulasDadas);
 
     tbody.innerHTML = dados.alunos.map(item => {
-      const { aluno, totalAulasDadas, presencas, faltas, atrasos, dispensas, faltasCompensadas, freqPorcentagem, media, situacaoFinal } = item;
+      const { aluno, totalAulasDadas, presencas, faltas, atrasos, dispensas, faltasCompensadas, freqPorcentagem, media } = item;
       const ehStatusX = (aluno.statusMatricula === 'TRANCADO' || aluno.statusMatricula === 'CANCELADO');
 
-      let situacaoClass = 'aprovado';
       let freqClass = 'good';
-      if (situacaoFinal.includes('Retido por Falta')) {
-        situacaoClass = 'retido-falta';
-        freqClass = 'danger';
-      } else if (situacaoFinal.includes('Retido por Nota')) {
-        situacaoClass = 'retido-nota';
-      } else if (situacaoFinal.includes('Recuperação')) {
-        situacaoClass = 'recuperacao';
-        freqClass = freqPorcentagem >= 75 ? 'good' : 'warning';
-      } else if (situacaoFinal.includes('Trancada')) {
-        situacaoClass = 'trancada';
-      } else if (situacaoFinal.includes('Cancelada')) {
-        situacaoClass = 'cancelada';
-      } else if (freqPorcentagem < 75) {
+      if (freqPorcentagem < 75) {
         freqClass = 'danger';
       } else if (freqPorcentagem < 85) {
         freqClass = 'warning';
       }
 
       let mediaClass = 'approved';
-      if (media < 5) mediaClass = 'failed';
-      else if (media < 7) mediaClass = 'recovery';
+      if (media < 50) mediaClass = 'failed';
+      else if (media < 70) mediaClass = 'recovery';
 
       return `
         <tr class="${ehStatusX ? 'row-status-x' : ''}">
@@ -128,42 +111,29 @@ class SinteseController {
           <td style="text-align: center;">
             <div class="media-display ${mediaClass}">${ehStatusX ? '-' : media.toFixed(1)}</div>
           </td>
-          <td style="text-align: center;">
-            <span class="situacao-badge ${situacaoClass}">${situacaoFinal}</span>
-          </td>
         </tr>
       `;
     }).join('');
 
-    // Renderizar legenda
+    // Limpar legenda de situação (removida conforme diretriz pedagógica)
     this.renderizarLegenda(legendaContainer);
   }
 
   calcularEstatisticasTurma(alunos) {
     const ativos = alunos.filter(item => item.aluno.statusMatricula === 'ATIVO');
     if (!ativos.length) {
-      return { mediaTurma: 0, freqMedia: 0, aprovados: 0, recuperacao: 0, retidosNota: 0, retidosFalta: 0, total: 0 };
+      return { mediaTurma: 0, freqMedia: 0, total: 0 };
     }
 
     let somaMedias = 0, somaFreq = 0;
-    let aprovados = 0, recuperacao = 0, retidosNota = 0, retidosFalta = 0;
-
     ativos.forEach(item => {
       somaMedias += item.media;
       somaFreq += item.freqPorcentagem;
-      if (item.situacaoFinal === 'Aprovado') aprovados++;
-      else if (item.situacaoFinal.includes('Recuperação')) recuperacao++;
-      else if (item.situacaoFinal.includes('Retido por Nota')) retidosNota++;
-      else if (item.situacaoFinal.includes('Retido por Falta')) retidosFalta++;
     });
 
     return {
       mediaTurma: (somaMedias / ativos.length).toFixed(1),
       freqMedia: Math.round(somaFreq / ativos.length),
-      aprovados,
-      recuperacao,
-      retidosNota,
-      retidosFalta,
       total: ativos.length
     };
   }
@@ -173,7 +143,7 @@ class SinteseController {
     container.innerHTML = `
       <div class="stat-card">
         <div class="stat-card-header">
-          <span class="stat-card-title">Média da Turma</span>
+          <span class="stat-card-title">Média Geral da Turma</span>
           <div class="stat-card-icon grades"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></div>
         </div>
         <div class="stat-card-value">${stats.mediaTurma}</div>
@@ -185,36 +155,30 @@ class SinteseController {
           <div class="stat-card-icon attendance"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div>
         </div>
         <div class="stat-card-value" style="color: ${stats.freqMedia >= 75 ? '#16a34a' : stats.freqMedia >= 60 ? '#d97706' : 'var(--senai-red)'}">${stats.freqMedia}%</div>
-        <div class="stat-card-sublabel">${totalAulas} aulas ministradas</div>
+        <div class="stat-card-sublabel">Média consolidada da turma</div>
       </div>
       <div class="stat-card">
         <div class="stat-card-header">
-          <span class="stat-card-title">Aprovados</span>
-          <div class="stat-card-icon attendance"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+          <span class="stat-card-title">Aulas Ministradas</span>
+          <div class="stat-card-icon attendance"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></div>
         </div>
-        <div class="stat-card-value" style="color: #16a34a;">${stats.aprovados}</div>
-        <div class="stat-card-sublabel">${stats.total > 0 ? Math.round((stats.aprovados / stats.total) * 100) : 0}% dos ativos</div>
+        <div class="stat-card-value" style="color: var(--text-main);">${totalAulas}</div>
+        <div class="stat-card-sublabel">Aulas no Diário de Classe</div>
       </div>
       <div class="stat-card">
         <div class="stat-card-header">
-          <span class="stat-card-title">Em Risco (Recup. + Retidos)</span>
-          <div class="stat-card-icon danger"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div>
+          <span class="stat-card-title">Total de Alunos</span>
+          <div class="stat-card-icon attendance"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div>
         </div>
-        <div class="stat-card-value" style="color: var(--senai-red);">${stats.recuperacao + stats.retidosNota + stats.retidosFalta}</div>
-        <div class="stat-card-sublabel">Recuperação: ${stats.recuperacao} | Retidos Nota: ${stats.retidosNota} | Retidos Falta: ${stats.retidosFalta}</div>
+        <div class="stat-card-value" style="color: var(--text-main);">${stats.total}</div>
+        <div class="stat-card-sublabel">Alunos acompanhados</div>
       </div>
     `;
   }
 
   renderizarLegenda(container) {
     if (!container) return;
-    container.innerHTML = `
-      <div class="situacao-legenda-item aprovado"><span class="situacao-badge aprovado" style="padding: 2px 8px; font-size: 10px;">Aprovado</span> Média ≥ 70 e Freq. ≥ 75%</div>
-      <div class="situacao-legenda-item recuperacao"><span class="situacao-badge recuperacao" style="padding: 2px 8px; font-size: 10px;">Recuperação</span> Média 50 - 69</div>
-      <div class="situacao-legenda-item retido"><span class="situacao-badge retido-nota" style="padding: 2px 8px; font-size: 10px;">Retido por Nota</span> Média < 50</div>
-      <div class="situacao-legenda-item retido"><span class="situacao-badge retido-falta" style="padding: 2px 8px; font-size: 10px;">Retido por Falta</span> Frequência < 75%</div>
-      <div class="situacao-legenda-item trancada"><span class="situacao-badge trancada" style="padding: 2px 8px; font-size: 10px;">Trancada/Cancelada</span> Status X</div>
-    `;
+    container.innerHTML = '';
   }
 }
 

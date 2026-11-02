@@ -1,8 +1,7 @@
 /**
  * =============================================================================
- * RENOVA SENAI - NOTAS E MÉDIAS (notas.js)
- * Cadastro de Avaliações, Digitação de Notas, Cálculo Automático e Médias
- * Layout Moderno com Cards de Estatísticas e Tabela Aprimorada
+ * RENOVA SENAI - MÓDULO DE NOTAS E AVALIAÇÕES (notas.js)
+ * Lançamento de Notas, Instrumentos Avaliativos e Médias
  * =============================================================================
  */
 
@@ -53,6 +52,7 @@ class NotasController {
     const tbody = document.getElementById('notasTableBody');
     const resumoContainer = document.getElementById('notasResumoCards');
     const legendaContainer = document.getElementById('notasLegenda');
+
     if (!thead || !tbody) return;
 
     const avaliacoes = window.db.getAvaliacoesPorUC(this.turmaId, this.ucId);
@@ -63,7 +63,7 @@ class NotasController {
     const stats = this.calcularEstatisticasTurma(alunosAtivos, avaliacoes);
     this.renderizarCardsResumo(resumoContainer, stats);
 
-    // Cabeçalho dinâmico das avaliações
+    // Cabeçalho dinâmico das avaliações (sem coluna Situação)
     thead.innerHTML = `
       <tr>
         <th style="width: 45px;">Nº</th>
@@ -77,7 +77,6 @@ class NotasController {
           </th>
         `).join('')}
         <th style="text-align: center; width: 110px;">Média Final</th>
-        <th style="text-align: center; width: 150px;">Situação</th>
       </tr>
     `;
 
@@ -98,7 +97,7 @@ class NotasController {
                 </div>
               </div>
             </td>
-            <td colspan="${avaliacoes.length + 2}" style="text-align: center; padding: 24px;">
+            <td colspan="${avaliacoes.length + 1}" style="text-align: center; padding: 24px;">
               <span class="status-x-badge">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 STATUS X - MATRÍCULA ${aluno.statusMatricula} (BLOQUEADO)
@@ -108,7 +107,7 @@ class NotasController {
         `;
       }
 
-      const { media, situacao } = window.db.calcularMediaAluno(this.turmaId, this.ucId, aluno.id);
+      const { media } = window.db.calcularMediaAluno(this.turmaId, this.ucId, aluno.id);
 
       const celulasNotas = avaliacoes.map(av => {
         const notaValor = window.db.getNota(av.id, aluno.id);
@@ -132,17 +131,11 @@ class NotasController {
         `;
       }).join('');
 
-      let situacaoClass = 'aprovado';
       let mediaClass = 'approved';
-      if (situacao === 'Em Recuperação') {
-        situacaoClass = 'recuperacao';
+      if (media < 50) {
+        mediaClass = 'failed';
+      } else if (media < 70) {
         mediaClass = 'recovery';
-      } else if (situacao === 'Retido por Nota') {
-        situacaoClass = 'retido-nota';
-        mediaClass = 'failed';
-      } else if (situacao.includes('Falta')) {
-        situacaoClass = 'retido-falta';
-        mediaClass = 'failed';
       }
 
       return `
@@ -162,14 +155,11 @@ class NotasController {
           <td style="text-align: center;">
             <div class="media-display ${mediaClass}">${media.toFixed(1)}</div>
           </td>
-          <td style="text-align: center;">
-            <span class="situacao-badge ${situacaoClass}">${situacao}</span>
-          </td>
         </tr>
       `;
     }).join('');
 
-    // Renderizar legenda
+    // Limpar legenda de situação (removida)
     this.renderizarLegenda(legendaContainer);
     if (window.app && window.app._aplicarModoObservador) {
       window.app._aplicarModoObservador('notas');
@@ -178,25 +168,24 @@ class NotasController {
 
   calcularEstatisticasTurma(alunos, avaliacoes) {
     if (!alunos.length || !avaliacoes.length) {
-      return { mediaTurma: 0, aprovados: 0, recuperacao: 0, retidos: 0, total: 0 };
+      return { mediaTurma: 0, maiorMedia: 0, menorMedia: 0, total: 0 };
     }
 
     let somaMedias = 0;
-    let aprovados = 0, recuperacao = 0, retidos = 0;
+    let maior = -1;
+    let menor = 101;
 
     alunos.forEach(aluno => {
-      const { media, situacao } = window.db.calcularMediaAluno(this.turmaId, this.ucId, aluno.id);
+      const { media } = window.db.calcularMediaAluno(this.turmaId, this.ucId, aluno.id);
       somaMedias += media;
-      if (situacao === 'Aprovado') aprovados++;
-      else if (situacao === 'Em Recuperação') recuperacao++;
-      else if (situacao.includes('Retido')) retidos++;
+      if (media > maior) maior = media;
+      if (media < menor) menor = media;
     });
 
     return {
       mediaTurma: alunos.length ? (somaMedias / alunos.length).toFixed(1) : 0,
-      aprovados,
-      recuperacao,
-      retidos,
+      maiorMedia: maior >= 0 ? maior.toFixed(1) : '-',
+      menorMedia: menor <= 100 ? menor.toFixed(1) : '-',
       total: alunos.length
     };
   }
@@ -214,40 +203,34 @@ class NotasController {
       </div>
       <div class="stat-card">
         <div class="stat-card-header">
-          <span class="stat-card-title">Aprovados</span>
+          <span class="stat-card-title">Maior Média</span>
           <div class="stat-card-icon attendance"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
         </div>
-        <div class="stat-card-value" style="color: #16a34a;">${stats.aprovados}</div>
-        <div class="stat-card-sublabel">${stats.total > 0 ? Math.round((stats.aprovados / stats.total) * 100) : 0}% da turma</div>
+        <div class="stat-card-value" style="color: #16a34a;">${stats.maiorMedia}</div>
+        <div class="stat-card-sublabel">Melhor desempenho da turma</div>
       </div>
       <div class="stat-card">
         <div class="stat-card-header">
-          <span class="stat-card-title">Em Recuperação</span>
+          <span class="stat-card-title">Menor Média</span>
           <div class="stat-card-icon warning"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div>
         </div>
-        <div class="stat-card-value" style="color: #d97706;">${stats.recuperacao}</div>
-        <div class="stat-card-sublabel">Necessitam atenção</div>
+        <div class="stat-card-value" style="color: #d97706;">${stats.menorMedia}</div>
+        <div class="stat-card-sublabel">Nota mínima registrada</div>
       </div>
       <div class="stat-card">
         <div class="stat-card-header">
-          <span class="stat-card-title">Retidos</span>
-          <div class="stat-card-icon danger"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg></div>
+          <span class="stat-card-title">Total de Alunos</span>
+          <div class="stat-card-icon attendance"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div>
         </div>
-        <div class="stat-card-value" style="color: var(--senai-red);">${stats.retidos}</div>
-        <div class="stat-card-sublabel">Por nota ou frequência</div>
+        <div class="stat-card-value" style="color: var(--text-main);">${stats.total}</div>
+        <div class="stat-card-sublabel">Alunos ativos no diário</div>
       </div>
     `;
   }
 
   renderizarLegenda(container) {
     if (!container) return;
-    container.innerHTML = `
-      <div class="situacao-legenda-item aprovado"><span class="situacao-badge aprovado" style="padding: 2px 8px; font-size: 10px;">Aprovado</span> Média ≥ 70</div>
-      <div class="situacao-legenda-item recuperacao"><span class="situacao-badge recuperacao" style="padding: 2px 8px; font-size: 10px;">Recuperação</span> Média 50 - 69</div>
-      <div class="situacao-legenda-item retido"><span class="situacao-badge retido-nota" style="padding: 2px 8px; font-size: 10px;">Retido por Nota</span> Média < 50</div>
-      <div class="situacao-legenda-item retido"><span class="situacao-badge retido-falta" style="padding: 2px 8px; font-size: 10px;">Retido por Falta</span> Frequência < 75%</div>
-      <div class="situacao-legenda-item trancada"><span class="situacao-badge trancada" style="padding: 2px 8px; font-size: 10px;">Trancada/Cancelada</span> Status X</div>
-    `;
+    container.innerHTML = '';
   }
 
   salvarNota(avaliacaoId, alunoId, valor) {
@@ -283,13 +266,18 @@ class NotasController {
       titulo,
       tipo,
       peso,
-      valorMaximo,
-      data: data || new Date().toISOString().split('T')[0]
+      data: data || new Date().toISOString().split('T')[0],
+      valorMaximo
     });
 
     window.app.fecharModal('modalNovaAvaliacao');
-    window.app.mostrarToast('Avaliação cadastrada com sucesso!', 'success');
+    window.app.mostrarToast('Avaliação criada com sucesso!', 'success');
     this.renderizar();
+
+    // Limpar campos do modal
+    document.getElementById('inputNovaAvaliacaoTitulo').value = '';
+    document.getElementById('inputNovaAvaliacaoPeso').value = '1.0';
+    document.getElementById('inputNovaAvaliacaoValorMaximo').value = '100';
   }
 }
 

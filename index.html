@@ -684,16 +684,81 @@
                <select id="selectDiarioUC" class="filter-select" onchange="window.diarioController.onUCChange(this.value)"></select>
              </div>
 <div class="filter-field filter-field-week" style="grid-column: 1 / -1;">
-                <label>Semana da Chamada</label>
+                <div class="diario-week-header-row">
+                  <div class="diario-week-title-box">
+                    <label class="diario-week-label">Semana da Chamada</label>
+                    <span class="diario-selected-date-display" id="diarioSelectedDateDisplay">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                      <span id="calendarSelectedDateText">Hoje</span>
+                    </span>
+                  </div>
+                </div>
+
                 <div class="diario-week-picker" id="diarioWeekPicker">
                   <button type="button" class="btn-week-nav" onclick="window.diarioController.navegarSemana(-1)" title="Semana anterior" aria-label="Semana anterior">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
                   </button>
                   <button type="button" class="btn-week-nav btn-hoje" onclick="window.diarioController.irParaHoje()" title="Esta semana" aria-label="Esta semana">Hoje</button>
+                  
                   <div class="week-pills" id="diarioWeekPills" role="group" aria-label="Dias da semana"></div>
+                  
                   <button type="button" class="btn-week-nav" onclick="window.diarioController.navegarSemana(1)" title="Próxima semana" aria-label="Próxima semana">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
                   </button>
+
+                  <button type="button" class="btn-calendar-toggle-prominent" id="btnCalendarToggle" onclick="window.diarioController.toggleCalendarPopover(event)" aria-expanded="false" title="Abrir calendário para ver dias anteriores">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                      <line x1="16" y1="2" x2="16" y2="6"></line>
+                      <line x1="8" y1="2" x2="8" y2="6"></line>
+                      <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                    <span>Calendário</span>
+                    <svg class="chevron-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </button>
+                  
+                  <!-- Painel do Calendário Completo: colado diretamente abaixo dos botões da semana -->
+                  <div class="calendar-popover" id="calendarPopover" role="dialog" aria-label="Selecionar data da aula" style="display: none;">
+                    <div class="calendar-popover-header">
+                      <div class="calendar-header-nav-group">
+                        <button type="button" class="calendar-nav-btn" onclick="window.diarioController.calendarNavMonth(-1)" aria-label="Mês anterior" title="Mês anterior">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                        </button>
+                        <div class="calendar-month-year" id="calendarMonthYear"></div>
+                        <button type="button" class="calendar-nav-btn" onclick="window.diarioController.calendarNavMonth(1)" aria-label="Próximo mês" title="Próximo mês">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        </button>
+                      </div>
+                      <button type="button" class="calendar-close-btn" onclick="window.diarioController.closeCalendarPopover()" title="Fechar calendário" aria-label="Fechar">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                      </button>
+                    </div>
+
+                    <div class="calendar-quick-shortcuts">
+                      <button type="button" class="btn-cal-shortcut" onclick="window.diarioController.irParaUltimaAulaComChamada()" title="Ir para a aula mais recente que possui chamada registrada">
+                        ⏪ Última aula salva (21/10/2026)
+                      </button>
+                      <button type="button" class="btn-cal-shortcut" onclick="window.diarioController.calendarSelectToday()" title="Ir para a data de hoje">
+                        📅 Ir para Hoje
+                      </button>
+                    </div>
+
+                    <div class="calendar-weekdays" id="calendarWeekdays"></div>
+                    <div class="calendar-days" id="calendarDays"></div>
+
+                    <div class="calendar-popover-footer">
+                      <div class="calendar-legend-guide">
+                        <span class="cal-legend-tag"><span class="dot-has-chamada"></span> Chamada salva</span>
+                        <span class="cal-legend-tag"><span class="dot-selected"></span> Selecionado</span>
+                        <span class="cal-legend-tag"><span class="dot-today"></span> Hoje</span>
+                      </div>
+                      <div class="calendar-direct-picker">
+                        <label for="inputDiarioDataDirect" class="calendar-direct-label">Data específica:</label>
+                        <input type="date" id="inputDiarioDataDirect" class="calendar-direct-input" onchange="window.diarioController.calendarSelectDate(this.value)">
+                      </div>
+                    </div>
+                  </div>
+                  
                   <input type="hidden" id="inputDiarioData" value="2026-10-22">
                 </div>
               </div>
@@ -724,7 +789,6 @@
              <span class="legenda-item"><strong class="badge-C">C</strong> Presente</span>
              <span class="legenda-item"><strong class="badge-F">F</strong> Falta</span>
              <span class="legenda-item"><strong class="badge-A">A</strong> Atraso</span>
-             
              <span class="legenda-item"><strong class="badge-X">X</strong> Trancado</span>
            </div>
 
@@ -973,7 +1037,6 @@
                   <th style="text-align:center; width: 100px;">Compensadas</th>
                   <th style="text-align:center; width: 110px;">Freq. Total</th>
                   <th style="text-align:center; width: 90px;">Média</th>
-                  <th style="text-align:center; min-width: 160px;">Situação Final</th>
                 </tr>
               </thead>
               <tbody id="sinteseTableBody"></tbody>

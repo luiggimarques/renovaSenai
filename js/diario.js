@@ -1,7 +1,8 @@
 /**
  * =============================================================================
  * RENOVA SENAI - MÓDULO DIÁRIO DE CLASSE (diario.js)
- * Chamada simples com Week Picker visual (Seg-Sex)
+ * Chamada com Week Picker visual (Seg-Sex), Calendário Interativo para dias anteriores
+ * e opções de presença: C (Presente), F (Falta), A (Atraso).
  * =============================================================================
  */
 
@@ -10,7 +11,7 @@ class DiarioController {
     this.turmaId = 1;
     this.ucId = 1;
     this.subturma = 'TODOS';
-    this.dataAula = new Date().toISOString().split('T')[0];
+    this.dataAula = this.formatDateISO(new Date());
     this.periodo = 'Tarde';
     this.quantidadeAulas = 4;
     this.frequencias = {}; // { [alunoId]: ['C', 'C', 'C', 'C'] }
@@ -18,61 +19,144 @@ class DiarioController {
     // Week Picker
     this.semanaAtual = null; // Date do domingo inicial da semana
     this.diasSemana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
+    
+    // Calendar Popover
+    this.calendarCurrentMonth = new Date(); // Mês atual no calendário
+    this.calendarPopoverOpen = false;
+    this._closeCalendarPopoverBound = null;
   }
 
   async init() {
     this.carregarTurmasSelect();
     this.carregarUCsSelect();
-    await this.irParaHoje(); // Inicializa semanaAtual e renderiza pills
+    
+    // Procura se já existem aulas com chamada nesta turma/UC para inicializar com dados reais
+    const chamadas = (window.db && window.db.data && window.db.data.aulas)
+      ? window.db.data.aulas.filter(a => a.turmaId === Number(this.turmaId) && a.ucId === Number(this.ucId) && a.frequencias)
+      : [];
+      
+    if (chamadas.length > 0) {
+      // Ordena por data decrescente para pegar a chamada mais recente
+      const chamadasOrdenadas = [...chamadas].sort((a, b) => b.data.localeCompare(a.data));
+      this.dataAula = chamadasOrdenadas[0].data;
+      this.semanaAtual = this.getInicioSemana(this.dataAula);
+    } else {
+      const hoje = new Date();
+      this.dataAula = this.formatDateISO(hoje);
+      this.semanaAtual = this.getInicioSemana(hoje);
+    }
+
+    const inputHidden = document.getElementById('inputDiarioData');
+    if (inputHidden) inputHidden.value = this.dataAula;
+
+    await this.renderWeekPicker();
     this.carregarChamada();
+    this.atualizarDataHeader();
+  }
+
+  // ============================================================
+  // UTILITÁRIOS SEGUROS DE DATA (Evita problemas de Fuso UTC)
+  // ============================================================
+
+  parseDate(str) {
+    if (str instanceof Date) {
+      return new Date(str.getFullYear(), str.getMonth(), str.getDate());
+    }
+    if (typeof str === 'string') {
+      const parts = str.split('T')[0].split('-');
+      if (parts.length === 3) {
+        return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      }
+    }
+    return new Date();
+  }
+
+  formatDateISO(d) {
+    const d2 = this.parseDate(d);
+    const ano = d2.getFullYear();
+    const mes = String(d2.getMonth() + 1).padStart(2, '0');
+    const dia = String(d2.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
+  }
+
+  formatarDataBR(dataStr) {
+    const parts = this.formatDateISO(dataStr).split('-');
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+
+  formatarDataExtenso(dataStr) {
+    const d = this.parseDate(dataStr);
+    const diasSemana = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    return `${diasSemana[d.getDay()]}, ${d.getDate()} de ${meses[d.getMonth()]} de ${d.getFullYear()}`;
   }
 
   // Retorna Date do domingo da semana da data dada (0=Dom)
   getInicioSemana(data) {
-    // [Remoção de prefixo/parâmetro 'd'] Substituído 'd' por nome descritivo 'dataRef'
-    const dataRef = new Date(data);
+    const dataRef = this.parseDate(data);
     const day = dataRef.getDay(); // 0=Dom, 1=Seg...
-    const diff = dataRef.getDate() - day; // Domingo da semana
-    return new Date(dataRef.setDate(diff));
+    return new Date(dataRef.getFullYear(), dataRef.getMonth(), dataRef.getDate() - day);
   }
 
   // Retorna array de 5 Dates (Seg-Sex) da semanaAtual
   getDiasUteisSemana() {
-    const inicio = new Date(this.semanaAtual);
+    const inicio = this.parseDate(this.semanaAtual);
     const dias = [];
     for (let i = 1; i <= 5; i++) { // 1=Seg ... 5=Sex
-      // [Remoção de prefixo/parâmetro 'd'] Substituído 'd' por nome descritivo 'dataItem'
-      const dataItem = new Date(inicio);
-      dataItem.setDate(inicio.getDate() + i);
-      dias.push(dataItem);
+      dias.push(new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + i));
     }
     return dias;
   }
 
   // Navega semanas (delta = -1 anterior, +1 próxima)
   async navegarSemana(delta) {
-    const nova = new Date(this.semanaAtual);
-    nova.setDate(nova.getDate() + delta * 7);
+    const inicio = this.parseDate(this.semanaAtual);
+    const nova = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + delta * 7);
     this.semanaAtual = this.getInicioSemana(nova);
+    
+    // Se a dataAula selecionada não pertence à nova semana visível, seleciona a Segunda-feira
+    const diasUteis = this.getDiasUteisSemana().map(d => this.formatDateISO(d));
+    if (!diasUteis.includes(this.dataAula)) {
+      this.dataAula = diasUteis[0]; // Segunda-feira da semana navegada
+      this.frequencias = {};
+      const inputHidden = document.getElementById('inputDiarioData');
+      if (inputHidden) inputHidden.value = this.dataAula;
+    }
+    
     await this.renderWeekPicker();
     this.carregarChamada();
+    this.atualizarDataHeader();
   }
 
   // Volta para semana de hoje
   async irParaHoje() {
-    this.semanaAtual = this.getInicioSemana(new Date());
+    const hoje = new Date();
+    const hojeStr = this.formatDateISO(hoje);
+    this.dataAula = hojeStr;
+    this.semanaAtual = this.getInicioSemana(hoje);
+    this.frequencias = {};
+    const inputHidden = document.getElementById('inputDiarioData');
+    if (inputHidden) inputHidden.value = hojeStr;
+    
     await this.renderWeekPicker();
     this.carregarChamada();
+    this.atualizarDataHeader();
+    
+    if (this.calendarPopoverOpen) {
+      this.calendarCurrentMonth = this.parseDate(this.dataAula);
+      this.renderCalendarPopover();
+    }
   }
 
-  // Seleciona um dia da semana
+  // Seleciona um dia da semana através dos pills
   async selecionarDiaSemana(dataStr) {
     this.dataAula = dataStr;
-    this.frequencias = {}; // LIMPA estado local ao mudar de dia
+    this.frequencias = {}; // LIMPA estado local ao mudar de dia para carregar do banco
     const inputHidden = document.getElementById('inputDiarioData');
     if (inputHidden) inputHidden.value = dataStr;
-    await this.renderWeekPicker(); // Re-render para marcar selected
-    this.carregarChamada();  // Carrega a chamada do dia (agora lê do banco)
+    await this.renderWeekPicker();
+    this.carregarChamada();
+    this.atualizarDataHeader();
   }
 
   // Renderiza os 5 pills (Seg-Sex) com indicadores de chamada salva
@@ -82,17 +166,16 @@ class DiarioController {
     if (!container) return;
 
     const dias = this.getDiasUteisSemana();
-    const hoje = new Date();
-    hoje.setHours(0,0,0,0);
+    const hojeStr = this.formatDateISO(new Date());
 
     // Busca quais dias têm chamada salva nesta semana
-    const inicioSemana = dias[0].toISOString().split('T')[0];
-    const fimSemana = dias[4].toISOString().split('T')[0];
+    const inicioSemana = this.formatDateISO(dias[0]);
+    const fimSemana = this.formatDateISO(dias[4]);
     const diasComChamada = await this.buscarDiasComChamada(inicioSemana, fimSemana);
 
     container.innerHTML = dias.map((dia, idx) => {
-      const dataStr = dia.toISOString().split('T')[0];
-      const isHoje = dia.getTime() === hoje.getTime();
+      const dataStr = this.formatDateISO(dia);
+      const isHoje = dataStr === hojeStr;
       const isSelecionado = this.dataAula === dataStr;
       const temChamada = diasComChamada.includes(dataStr);
 
@@ -108,14 +191,254 @@ class DiarioController {
       `;
     }).join('');
 
-    // NÃO sobrescreve dataAula - mantém a selecionada
     if (inputHidden) inputHidden.value = this.dataAula;
+    
+    const inputDirect = document.getElementById('inputDiarioDataDirect');
+    if (inputDirect) inputDirect.value = this.dataAula;
+
+    this.atualizarDataHeader();
+  }
+
+  // Atualiza os cabeçalhos com o nome e data formatados
+  atualizarDataHeader() {
+    const dateTextEl = document.getElementById('calendarSelectedDateText');
+    const inputDirect = document.getElementById('inputDiarioDataDirect');
+    
+    if (dateTextEl) {
+      dateTextEl.textContent = this.formatarDataExtenso(this.dataAula);
+    }
+    if (inputDirect) {
+      inputDirect.value = this.dataAula;
+    }
   }
 
   // Busca dias com chamada salva no período (usa DB)
   async buscarDiasComChamada(inicio, fim) {
+    if (!window.db || !window.db.getChamadasPorPeriodo) return [];
     return window.db.getChamadasPorPeriodo(this.turmaId, this.ucId, inicio, fim);
   }
+
+  // ============================================================
+  // CALENDÁRIO INTERATIVO - POPOVER E VISUALIZAÇÃO DE DIAS ANTERIORES
+  // ============================================================
+
+  toggleCalendarPopover(event) {
+    if (event) event.stopPropagation();
+    const popover = document.getElementById('calendarPopover');
+    const toggleBtn = document.getElementById('btnCalendarToggle');
+    const toggleIconBtn = document.getElementById('btnCalendarToggleIcon');
+    
+    if (!popover) return;
+    
+    this.calendarPopoverOpen = !this.calendarPopoverOpen;
+    
+    if (this.calendarPopoverOpen) {
+      // Sincroniza o mês do calendário com a data da aula atualmente selecionada
+      this.calendarCurrentMonth = this.parseDate(this.dataAula);
+      this.renderCalendarPopover();
+      popover.style.display = 'block';
+      if (toggleBtn) {
+        toggleBtn.setAttribute('aria-expanded', 'true');
+        toggleBtn.classList.add('active');
+      }
+      if (toggleIconBtn) {
+        toggleIconBtn.setAttribute('aria-expanded', 'true');
+        toggleIconBtn.classList.add('active');
+      }
+      
+      // Fecha ao clicar fora, mas ignora cliques dentro do popover ou nos botões de toggle
+      if (this._closeCalendarPopoverBound) {
+        document.removeEventListener('click', this._closeCalendarPopoverBound);
+      }
+      this._closeCalendarPopoverBound = this._closeCalendarPopover.bind(this);
+      setTimeout(() => {
+        document.addEventListener('click', this._closeCalendarPopoverBound);
+      }, 50);
+    } else {
+      this.closeCalendarPopover();
+    }
+  }
+
+  _closeCalendarPopover(event) {
+    const popover = document.getElementById('calendarPopover');
+    const toggleBtn = document.getElementById('btnCalendarToggle');
+    const toggleIconBtn = document.getElementById('btnCalendarToggleIcon');
+    
+    // Não fecha se o clique ocorreu dentro do próprio calendário ou dos botões de abertura
+    if (popover && popover.contains(event.target)) return;
+    if (toggleBtn && toggleBtn.contains(event.target)) return;
+    if (toggleIconBtn && toggleIconBtn.contains(event.target)) return;
+    
+    this.closeCalendarPopover();
+  }
+
+  closeCalendarPopover() {
+    const popover = document.getElementById('calendarPopover');
+    const toggleBtn = document.getElementById('btnCalendarToggle');
+    const toggleIconBtn = document.getElementById('btnCalendarToggleIcon');
+    
+    this.calendarPopoverOpen = false;
+    if (popover) popover.style.display = 'none';
+    if (toggleBtn) {
+      toggleBtn.setAttribute('aria-expanded', 'false');
+      toggleBtn.classList.remove('active');
+    }
+    if (toggleIconBtn) {
+      toggleIconBtn.setAttribute('aria-expanded', 'false');
+      toggleIconBtn.classList.remove('active');
+    }
+    if (this._closeCalendarPopoverBound) {
+      document.removeEventListener('click', this._closeCalendarPopoverBound);
+      this._closeCalendarPopoverBound = null;
+    }
+  }
+
+  calendarNavMonth(delta) {
+    this.calendarCurrentMonth = new Date(
+      this.calendarCurrentMonth.getFullYear(),
+      this.calendarCurrentMonth.getMonth() + delta,
+      1
+    );
+    this.renderCalendarPopover();
+  }
+
+  async renderCalendarPopover() {
+    const monthYearEl = document.getElementById('calendarMonthYear');
+    const weekdaysEl = document.getElementById('calendarWeekdays');
+    const daysEl = document.getElementById('calendarDays');
+    
+    if (!monthYearEl || !weekdaysEl || !daysEl) return;
+    
+    const ano = this.calendarCurrentMonth.getFullYear();
+    const mesIndex = this.calendarCurrentMonth.getMonth();
+    
+    const nomesMeses = [
+      'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ];
+    monthYearEl.textContent = `${nomesMeses[mesIndex]} de ${ano}`;
+    
+    // Dias da semana (Dom a Sáb)
+    const diasSemanaCal = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    weekdaysEl.innerHTML = diasSemanaCal.map(d => `<div class="calendar-weekday">${d}</div>`).join('');
+    
+    // Busca dias com chamada salva para o mês atual
+    const primeiroDiaMes = new Date(ano, mesIndex, 1);
+    const ultimoDiaMes = new Date(ano, mesIndex + 1, 0);
+    const inicioMesStr = this.formatDateISO(primeiroDiaMes);
+    const fimMesStr = this.formatDateISO(ultimoDiaMes);
+    const diasComChamada = await this.buscarDiasComChamada(inicioMesStr, fimMesStr);
+    
+    const primeiroDiaSemana = primeiroDiaMes.getDay(); // 0=Dom
+    const totalDiasMes = ultimoDiaMes.getDate();
+    const hojeStr = this.formatDateISO(new Date());
+    
+    let diasHtml = '';
+    
+    // Dias do mês anterior para preencher a primeira semana
+    const ultimoDiaMesAnterior = new Date(ano, mesIndex, 0).getDate();
+    for (let i = primeiroDiaSemana - 1; i >= 0; i--) {
+      const numDiaPrev = ultimoDiaMesAnterior - i;
+      const prevDate = new Date(ano, mesIndex - 1, numDiaPrev);
+      const prevDataStr = this.formatDateISO(prevDate);
+      diasHtml += `
+        <button type="button" class="calendar-day prev-month" onclick="window.diarioController.calendarSelectDate('${prevDataStr}')" title="${this.formatarDataBR(prevDataStr)}">
+          ${numDiaPrev}
+        </button>
+      `;
+    }
+    
+    // Dias do mês atual
+    for (let dia = 1; dia <= totalDiasMes; dia++) {
+      const dataStr = `${ano}-${String(mesIndex + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+      const isHoje = dataStr === hojeStr;
+      const isSelecionado = this.dataAula === dataStr;
+      const temChamada = diasComChamada.includes(dataStr);
+      
+      let classes = ['calendar-day'];
+      if (isSelecionado) classes.push('selected');
+      if (isHoje) classes.push('today');
+      if (temChamada) classes.push('has-chamada');
+      
+      const dataFormatada = this.formatarDataBR(dataStr);
+      const statusDesc = temChamada ? ' • Chamada salva' : '';
+      const hojeDesc = isHoje ? ' • Hoje' : '';
+      
+      diasHtml += `
+        <button type="button" 
+          class="${classes.join(' ')}"
+          onclick="window.diarioController.calendarSelectDate('${dataStr}')"
+          aria-label="${dataFormatada}${statusDesc}${hojeDesc}"
+          title="${dataFormatada}${statusDesc}${hojeDesc}">
+          <span>${dia}</span>
+          ${temChamada ? '<span class="cal-chamada-dot" title="Chamada salva"></span>' : ''}
+        </button>
+      `;
+    }
+    
+    // Dias do próximo mês para completar a grade
+    const totalCelulas = primeiroDiaSemana + totalDiasMes;
+    const celulasFaltantes = (totalCelulas % 7 === 0) ? 0 : 7 - (totalCelulas % 7);
+    for (let i = 1; i <= celulasFaltantes; i++) {
+      const nextDate = new Date(ano, mesIndex + 1, i);
+      const nextDataStr = this.formatDateISO(nextDate);
+      diasHtml += `
+        <button type="button" class="calendar-day next-month" onclick="window.diarioController.calendarSelectDate('${nextDataStr}')" title="${this.formatarDataBR(nextDataStr)}">
+          ${i}
+        </button>
+      `;
+    }
+    
+    daysEl.innerHTML = diasHtml;
+  }
+
+  // Seleciona uma data a partir do calendário mensal (dias anteriores ou futuros)
+  calendarSelectDate(dataStr) {
+    if (!dataStr) return;
+    this.dataAula = dataStr;
+    this.frequencias = {}; // Limpa estado local para ler do banco
+    this.semanaAtual = this.getInicioSemana(dataStr); // CRÍTICO: atualiza os 5 pills para a semana do dia selecionado!
+    
+    const inputHidden = document.getElementById('inputDiarioData');
+    if (inputHidden) inputHidden.value = dataStr;
+    
+    const inputDirect = document.getElementById('inputDiarioDataDirect');
+    if (inputDirect) inputDirect.value = dataStr;
+    
+    this.renderWeekPicker(); // Atualiza os pills da semana
+    this.carregarChamada();  // Carrega a chamada do dia selecionado
+    this.renderCalendarPopover(); // Atualiza visualmente o dia selecionado no calendário
+    this.atualizarDataHeader();
+
+    if (window.app && window.app.mostrarToast) {
+      window.app.mostrarToast(`Chamada de ${this.formatarDataBR(dataStr)} carregada`, 'info');
+    }
+  }
+
+  calendarSelectToday() {
+    const hojeStr = this.formatDateISO(new Date());
+    this.calendarSelectDate(hojeStr);
+  }
+
+  // Atalho direto para ir para a aula com chamada mais recente registrada
+  irParaUltimaAulaComChamada() {
+    const chamadas = (window.db && window.db.data && window.db.data.aulas)
+      ? window.db.data.aulas.filter(a => a.turmaId === Number(this.turmaId) && a.ucId === Number(this.ucId) && a.frequencias)
+      : [];
+
+    if (chamadas.length > 0) {
+      const chamadasOrdenadas = [...chamadas].sort((a, b) => b.data.localeCompare(a.data));
+      this.calendarSelectDate(chamadasOrdenadas[0].data);
+    } else {
+      if (window.app && window.app.mostrarToast) {
+        window.app.mostrarToast('Nenhuma chamada anterior encontrada para esta disciplina.', 'info');
+      }
+    }
+  }
+
+  // ============================================================
+  // TURMAS E UNIDADES CURRICULARES
+  // ============================================================
 
   carregarTurmasSelect() {
     const sel = document.getElementById('selectDiarioTurma');
@@ -151,16 +474,20 @@ class DiarioController {
     this.carregarUCsSelect();
     const turma = window.db.getTurmaById(this.turmaId);
     this.atualizarInfoBadge(turma);
-    await this.renderWeekPicker(); // Aguarda render
+    await this.renderWeekPicker();
     this.carregarChamada();
   }
 
   async onUCChange(novaUCId) {
     this.ucId = Number(novaUCId);
     this.frequencias = {}; // Limpa ao trocar UC
-    await this.renderWeekPicker(); // Aguarda render
+    await this.renderWeekPicker();
     this.carregarChamada();
   }
+
+  // ============================================================
+  // TABELA DE CHAMADA (C, F, A - Sem a letra D)
+  // ============================================================
 
   carregarChamada() {
     console.log('[Diário] carregarChamada:', { turmaId: this.turmaId, ucId: this.ucId, data: this.dataAula, subturma: this.subturma, qtdAulas: this.quantidadeAulas });
@@ -171,8 +498,7 @@ class DiarioController {
       return;
     }
 
-    // SÓ carrega do banco se NÃO temos dados locais (inicialização)
-    // Isso evita sobrescrever alterações não salvas a cada clique
+    // SÓ carrega do banco se NÃO temos dados locais (inicialização ou troca de dia)
     if (Object.keys(this.frequencias).length === 0) {
       const chamadaExistente = window.db.getChamada(this.turmaId, this.ucId, this.dataAula, this.periodo, this.subturma);
 
@@ -204,7 +530,7 @@ class DiarioController {
     const inputQtd = document.getElementById('inputDiarioQtdAulas');
     if (inputQtd) inputQtd.value = this.quantidadeAulas;
 
-    // Renderizar linhas
+    // Renderizar linhas de alunos
     container.innerHTML = alunos.map(aluno => {
       const ehStatusX = (aluno.statusMatricula === 'TRANCADO' || aluno.statusMatricula === 'CANCELADO');
       const justificativa = window.db.getJustificativaParaData(aluno.id, this.dataAula);
@@ -226,12 +552,14 @@ class DiarioController {
       if (!this.frequencias[aluno.id]) {
         if (ehStatusX) {
           this.frequencias[aluno.id] = Array(this.quantidadeAulas).fill('X');
+        } else if (justificativa) {
+          this.frequencias[aluno.id] = Array(this.quantidadeAulas).fill('D');
         } else {
           this.frequencias[aluno.id] = Array(this.quantidadeAulas).fill('C');
         }
       }
 
-      // Células de frequência (botões C/F/A)
+      // Células de frequência: botões C (Presente), F (Falta), A (Atraso) - Letra D removida
       let celulasHtml = '';
       if (ehStatusX) {
         celulasHtml = `<td colspan="${this.quantidadeAulas}" style="text-align:center; padding:20px;">
@@ -240,19 +568,22 @@ class DiarioController {
       } else {
         for (let i = 0; i < this.quantidadeAulas; i++) {
           const status = this.frequencias[aluno.id][i] || 'C';
-          const disabledF = justificativa ? 'disabled style="opacity:0.3;cursor:not-allowed;" title="Bloqueado por atestado"' : '';
+          const disabledF = justificativa ? 'disabled style="opacity:0.3;cursor:not-allowed;" title="Bloqueado por atestado homologado"' : '';
+          const dispensaTag = (status === 'D') ? '<span class="status-dispensa-tag" title="Dispensado por atestado homologado">Dispensa</span>' : '';
+
           celulasHtml += `
             <td style="text-align:center;">
               <div class="freq-selector-group">
-                <button class="btn-freq-opt ${status==='C'?'active-C':''}" onclick="window.diarioController.setFrequencia(${aluno.id},${i},'C')" title="Presente">C</button>
-                <button class="btn-freq-opt ${status==='F'?'active-F':''}" ${disabledF} onclick="window.diarioController.setFrequencia(${aluno.id},${i},'F')" title="Falta">F</button>
-                <button class="btn-freq-opt ${status==='A'?'active-A':''}" onclick="window.diarioController.setFrequencia(${aluno.id},${i},'A')" title="Atraso">A</button>
+                <button type="button" class="btn-freq-opt ${status==='C'?'active-C':''}" onclick="window.diarioController.setFrequencia(${aluno.id},${i},'C')" title="Presente">C</button>
+                <button type="button" class="btn-freq-opt ${status==='F'?'active-F':''}" ${disabledF} onclick="window.diarioController.setFrequencia(${aluno.id},${i},'F')" title="Falta">F</button>
+                <button type="button" class="btn-freq-opt ${status==='A'?'active-A':''}" onclick="window.diarioController.setFrequencia(${aluno.id},${i},'A')" title="Atraso">A</button>
+                ${dispensaTag}
               </div>
             </td>`;
         }
       }
 
-      // Badges
+      // Badges informativos
       let badges = '';
       if (justificativa) badges += `<span class="justified-pill-badge">🏥 ${justificativa.tipo}</span>`;
       if (atrasosAcumulados >= 5) badges += `<span class="delays-warning-chip">⚠️ ${atrasosAcumulados} atrasos</span>`;
@@ -320,7 +651,8 @@ class DiarioController {
     const alunos = window.db.getAlunosPorTurma(this.turmaId, this.subturma);
     alunos.forEach(aluno => {
       if (aluno.statusMatricula === 'ATIVO') {
-        this.frequencias[aluno.id] = Array(this.quantidadeAulas).fill('C');
+        const justificativa = window.db.getJustificativaParaData(aluno.id, this.dataAula);
+        this.frequencias[aluno.id] = Array(this.quantidadeAulas).fill(justificativa ? 'D' : 'C');
       }
     });
     this.carregarChamada();
@@ -333,7 +665,6 @@ class DiarioController {
       return;
     }
     try {
-      // Permite salvar mesmo se data antiga (só avisa)
       const resultado = window.db.salvarChamada({
         turmaId: this.turmaId,
         ucId: this.ucId,
@@ -346,19 +677,12 @@ class DiarioController {
 
       this.verificarLimiteCriticoFrequencia();
 
-      // [Compensação Manual pelo Professor] Notificações automáticas desativadas pois compensação agora é definida manualmente
-      /*
-      if (resultado.eventosAtrasosGerados?.length) {
-        window.app.mostrarAlertaModal('Compensação por Atrasos', `Alunos com 5+ atrasos:\n• ${resultado.eventosAtrasosGerados.join('\n• ')}\n\nCompensação de 2h gerada.`);
-      }
-      if (resultado.eventosFaltasGerados?.length) {
-        window.app.mostrarAlertaModal('Compensação por Faltas', `Alunos com frequência < 75%:\n${resultado.eventosFaltasGerados.join('\n')}\n\nCompensação gerada.`);
-      }
-      */
-
       window.app.mostrarToast('Chamada salva com sucesso!', 'success');
       this.carregarChamada();
-      this.renderWeekPicker(); // Atualiza indicadores verdes
+      this.renderWeekPicker(); // Atualiza indicadores verdes nos pills
+      if (this.calendarPopoverOpen) {
+        this.renderCalendarPopover(); // Atualiza indicadores no calendário
+      }
     } catch (e) {
       window.app.mostrarToast(e.message, 'warning');
     }

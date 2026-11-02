@@ -250,7 +250,7 @@ doc.setTextColor(...this.mediumGray);
   gerarPDF_Frequencia(doc, yPos, margin, pageWidth, pageHeight, desenharCabecalho, desenharRodape) {
     const dados = window.db.getSinteseConsolidada(this.turmaId, this.ucId);
     
-    const headers = [['Nº', 'Nome do Aluno', 'RA', 'Presenças', 'Faltas', 'Atrasos', 'Faltas Comp.', 'Freq. Total (%)', 'Situação']];
+    const headers = [['Nº', 'Nome do Aluno', 'RA', 'Presenças', 'Faltas', 'Atrasos', 'Faltas Comp.', 'Freq. Total (%)']];
     const rows = dados.alunos.map(item => [
       item.aluno.numeroChamada.toString(),
       item.aluno.nome,
@@ -259,8 +259,7 @@ doc.setTextColor(...this.mediumGray);
       item.faltas.toString(),
       item.atrasos.toString(),
       item.faltasCompensadas.toString(),
-      item.freqPorcentagem + '%',
-      item.situacaoFinal
+      item.freqPorcentagem + '%'
     ]);
 
     doc.autoTable({
@@ -314,9 +313,9 @@ doc.setTextColor(...this.mediumGray);
     const alunos = window.db.getAlunosPorTurma(this.turmaId);
     const alunosAtivos = alunos.filter(a => a.statusMatricula === 'ATIVO');
 
-    const headers = [['Nº', 'Nome do Aluno', 'RA', ...avaliacoes.map(av => av.titulo), 'Média Final', 'Resultado']];
+    const headers = [['Nº', 'Nome do Aluno', 'RA', ...avaliacoes.map(av => av.titulo), 'Média Final']];
     const rows = alunosAtivos.map(aluno => {
-      const { media, situacao } = window.db.calcularMediaAluno(this.turmaId, this.ucId, aluno.id);
+      const { media } = window.db.calcularMediaAluno(this.turmaId, this.ucId, aluno.id);
       return [
         aluno.numeroChamada.toString(),
         aluno.nome,
@@ -325,8 +324,7 @@ doc.setTextColor(...this.mediumGray);
           const n = window.db.getNota(av.id, aluno.id);
           return n !== null ? n.toFixed(1) : '-';
         }),
-        media.toFixed(1),
-        situacao
+        media.toFixed(1)
       ];
     });
 
